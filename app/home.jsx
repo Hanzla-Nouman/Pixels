@@ -23,6 +23,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Categories from "../components/Categories";
 import { debounce } from "lodash";
 import FiltersModal from "@/components/FiltersModal";
+import { useRouter } from "expo-router";
 
 var page = 1;
 const home = () => {
@@ -31,8 +32,11 @@ const home = () => {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState(null);
   const [filter, setfilter] = useState(null);
+  const [isEndReached, setisEndReached] = useState(false);
   const searchInputRef = useRef(null);
   const modalRef = useRef(null);
+  const scrollRef = useRef(null);
+  const router = useRouter()
 
   const [images, setImages] = useState([]);
   const handleCategory = (cat) => {
@@ -50,7 +54,7 @@ const home = () => {
   useEffect(() => {
     fetchImages();
   }, []);
-  const fetchImages = async (params = { page: 1 }, append = false) => {
+  const fetchImages = async (params = { page: 1 }, append = true) => {
     let res = await getPictures(params);
     if (res.success && res?.data?.hits) {
       if (append) setImages([...images, ...res.data.hits]);
@@ -76,6 +80,27 @@ const home = () => {
     setSearch(text);
     searchInputRef?.current?.clear();
   };
+  const handleScroll = (event) => {
+    const contentHeight = event.nativeEvent.contentSize.height;
+    const scrollViewHeight = event.nativeEvent.layoutMeasurement.height;
+    const scrollOffset = event.nativeEvent.contentOffset.y;
+    const bottomPosition = contentHeight - scrollViewHeight;
+    if (scrollOffset >= bottomPosition - 1) {
+      if(!isEndReached){
+setisEndReached(true)
+        // console.log("reached");
+      }
+      ++page;
+      let params = {
+        page,
+        ...filter,
+      };
+      if (category) params.category = category;
+      if (search) params.q = search;
+      fetchImages(params);
+    }
+  };
+
   const openFilterModal = () => {
     modalRef?.current?.present();
   };
@@ -95,31 +120,31 @@ const home = () => {
       fetchImages(params, false);
     }
 
-    console.log("applyFilters");
+    // console.log("applyFilters");
     closeFilterModal();
   };
   const clearThisFilter = (filterName) => {
     // Create a new object excluding the specified key using the spread operator and filtering
     const filterz = Object.keys(filter)
-      .filter(key => key !== filterName)
+      .filter((key) => key !== filterName)
       .reduce((acc, key) => {
         acc[key] = filter[key];
         return acc;
       }, {});
-  
+
     // Update the state and parameters
     setfilter(filterz);
     page = 1;
     setImages([]);
-  
+
     let params = {
       page,
       ...filterz,
     };
-  
+
     if (category) params.category = category;
     if (search) params.q = search;
-  
+
     fetchImages(params, false);
   };
   const resetFilters = () => {
@@ -143,7 +168,14 @@ const home = () => {
       <View style={[{ paddingTop }]}>
         {/* HEADER */}
         <View style={styles.header}>
-          <Pressable>
+          <Pressable
+            onPress={() =>
+              scrollRef.current.scrollTo({
+                y: 0,
+                animated: true,
+              })
+            }
+          >
             <Text style={styles.title}>Pixels</Text>
           </Pressable>
           <Pressable onPress={openFilterModal}>
@@ -154,7 +186,13 @@ const home = () => {
             />
           </Pressable>
         </View>
-        <ScrollView contentContainerStyle={{ gap: 15 }} overScrollMode="never">
+        <ScrollView
+          contentContainerStyle={{ gap: 15 }}
+          overScrollMode="never"
+          onScroll={handleScroll}
+          scrollEventThrottle={5}
+          ref={scrollRef}
+        >
           {/* SEARCH BAR */}
           <View style={styles.searchBar}>
             <View style={styles.searchIcon}>
@@ -223,7 +261,7 @@ const home = () => {
               })}
             </ScrollView>
           )}
-          <View>{images.length > 0 && <ImageGrid images={images} />}</View>
+          <View>{images.length > 0 && <ImageGrid images={images} router={router} />}</View>
           <View
             style={{
               marginBottom: 100,

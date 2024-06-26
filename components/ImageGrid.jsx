@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { MasonryFlashList } from "@shopify/flash-list";
 import ImageCard from "../components/ImageCard";
 import { getColumnsCount, wp } from "@/helpers/common";
-const ImageGrid = ({ images }) => {
+const ImageGrid = ({ images,router }) => {
   const columns = getColumnsCount();
   return (
     <View style={styles.container}>
@@ -13,7 +13,7 @@ const ImageGrid = ({ images }) => {
         initialNumToRender={1000}
         contentContainerStyle={styles.listContainer}
         renderItem={({ item, index }) => (
-          <ImageCard item={item} index={index} columns={columns}/>
+          <ImageCard router={router} item={item} index={index} columns={columns}/>
         )}
         estimatedItemSize={200}
       />
