@@ -9,6 +9,7 @@ export const theme = {
     medium: 500,
     semibold: 600,
     bold: 700 ,
+
   },
   radius: {
     xs: 10,
